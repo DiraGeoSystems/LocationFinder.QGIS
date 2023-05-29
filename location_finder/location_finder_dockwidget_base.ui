@@ -32,6 +32,9 @@
       </item>
       <item>
        <widget class="QLineEdit" name="lineEditService">
+        <property name="toolTip">
+         <string>service base URL - hit Enter to retrieve version and remember URL in settings</string>
+        </property>
         <property name="placeholderText">
          <string>base URL of a LocationFinder service</string>
         </property>
@@ -61,7 +64,7 @@
       <item>
        <widget class="QLineEdit" name="lineEditQuery">
         <property name="placeholderText">
-         <string>type a place name</string>
+         <string>type a place name and hit Enter</string>
         </property>
         <property name="clearButtonEnabled">
          <bool>true</bool>

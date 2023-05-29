@@ -20,7 +20,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QLabel, QFrame
-from qgis.core import Qgis, QgsMessageLog, QgsPointXY, QgsRectangle, QgsProject
+from qgis.core import Qgis, QgsMessageLog, QgsPointXY, QgsRectangle, QgsSettings, QgsProject
 from qgis.gui import QgisInterface, QgsMapCanvas
 
 # Initialize Qt resources from file resources.py
@@ -189,6 +189,10 @@ class LocationFinderPlugin:
             # connect to provide cleanup on closing of dockwidget
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
 
+            settings = QgsSettings()
+            serviceUrl = settings.value("locationfinder/serviceUrl", "")
+            self.dockwidget.lineEditService.setText(serviceUrl)
+
             # show the dockwidget
             # TODO: fix to allow choice of dock location
             self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
@@ -226,6 +230,10 @@ class LocationFinderPlugin:
             level = Qgis.Info if r.status_code < 400 else Qgis.Critical
             QgsMessageLog.logMessage(f"{r.status_code} GET {r.url}", level=level)
             self.dockwidget.plainTextEdit.setPlainText(r.text)
+            r.raise_for_status() # raise error if status code indicates error
+            settings = QgsSettings()
+            settings.setValue("locationfinder/serviceUrl", baseUrl)
+            # TODO and/or store to project settings?
         except requests.exceptions.RequestException as e:
             self.reportError(f"request failed: {e}")
             self.dockwidget.plainTextEdit.setPlainText(str(e))
