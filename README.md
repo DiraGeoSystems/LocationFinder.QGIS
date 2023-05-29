@@ -29,14 +29,23 @@ or ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins (Linux)
   the QGIS installation directory for this script) or pyrcc5 or one of
   its requirements will not be found
 - warning: I'm new to QGIS development and I'm also new to Qt development
+- message levels for use in `iface.messageBar().pushMessage()` and
+  `QgsMessageLog.logMessage()` are: `Qgis.Info`, `Qgis.Warning`,
+  `Qgis.Critical`, `Qgis.Success`
 
 ## Developer Resources
 
-The *PyQGIS Developer Cookbook* at
+The *PyQGIS Developer Cookbook* at  
 <http://www.qgis.org/pyqgis-cookbook/index.html>
 
-The *Qt Designer Manual* at
+The minimal QGIS Python plugin can be seen at  
+<https://github.com/wonder-sk/qgis-minimal-plugin/>
+
+The *Qt Designer Manual* at  
 <https://doc.qt.io/qt-6/qtdesigner-manual.html>
 
 About Python environments with VS Code see  
 <https://code.visualstudio.com/docs/python/environments>
+
+Documentation for the *requests* HTTP library at  
+<https://requests.readthedocs.io/>

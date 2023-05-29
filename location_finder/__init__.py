@@ -25,5 +25,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
     #
-    from .location_finder import LocationFinder
-    return LocationFinder(iface)
+    from .location_finder import LocationFinderPlugin
+    return LocationFinderPlugin(iface)
