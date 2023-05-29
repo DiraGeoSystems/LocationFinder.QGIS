@@ -22,6 +22,8 @@ or ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins (Linux)
   OSGeo4W installer (Windows .msi)
 - the plugin itself consists of the [location_finder](./location_finder/)
   folder
+- tooling: VS Code with the Python extension (had to create *.env* file
+  that sets the PYTHONPATH variable for QGIS and Qt stuff to be found)
 - use pyrcc5 to compile *resources.qrc* into *resources.py* – pyrcc5
   comes with OSGeoW but requires *o4w_env.bat* to be run first (search
   the QGIS installation directory for this script) or pyrcc5 or one of
@@ -35,3 +37,6 @@ The *PyQGIS Developer Cookbook* at
 
 The *Qt Designer Manual* at
 <https://doc.qt.io/qt-6/qtdesigner-manual.html>
+
+About Python environments with VS Code see  
+<https://code.visualstudio.com/docs/python/environments>
