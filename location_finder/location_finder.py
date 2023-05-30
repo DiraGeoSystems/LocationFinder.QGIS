@@ -20,7 +20,9 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QLabel, QFrame
-from qgis.core import Qgis, QgsMessageLog, QgsPointXY, QgsRectangle, QgsSettings, QgsProject
+from qgis.core import Qgis, QgsMessageLog, QgsSettings, QgsProject
+from qgis.core import QgsPointXY, QgsRectangle
+from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from qgis.gui import QgisInterface, QgsMapCanvas
 
 # Initialize Qt resources from file resources.py
@@ -75,6 +77,11 @@ class LocationFinderPlugin:
         self.pluginIsActive = False
         self.dockwidget = None
         self.action = None
+
+        # Cached transformation:
+        self.cachedTrafo = None
+        self.trafoFromSrid = None
+        self.trafoToSrid = None
 
 
     # noinspection PyMethodMayBeStatic
@@ -137,6 +144,7 @@ class LocationFinderPlugin:
     def onQueryEdited(self):
         # called when the user edited text (not when programmatically modified)
         # TODO request a query, but only after some delay (a "typing pause")
+        # TODO consider QTimer() or else use Timer from threading for throttling
         pass
 
 
@@ -308,16 +316,59 @@ class LocationFinderPlugin:
         def panToLocation():
             mapCanvas:QgsMapCanvas = self.iface.mapCanvas()
             point = QgsPointXY(loc.cx, loc.cy)
-            # TODO project point from loc.sref to map's crs
+            trafo = self.getTrafo(loc.sref)
+            point = trafo.transform(point)
+            QgsMessageLog.logMessage(f"Panning map to {loc.cx},{loc.cy} for {loc}", level=Qgis.Info)
             mapCanvas.setCenter(point)
-            QgsMessageLog.logMessage(f"pan map to {loc.cx},{loc.cy} for {loc}")
+            mapCanvas.refresh() # TODO required?
         def zoomToLocation():
             mapCanvas:QgsMapCanvas = self.iface.mapCanvas()
             rect = QgsRectangle(loc.xmin, loc.ymin, loc.xmax, loc.ymax)
-            # TODO project rect from loc.sref to map's crs
+            trafo = self.getTrafo(loc.sref)
+            rect = trafo.transform(rect)
+            QgsMessageLog.logMessage(f"Zooming map to {loc.xmin},{loc.ymin},{loc.xmax},{loc.ymax} for {loc}", level=Qgis.Info)
             mapCanvas.setExtent(rect)
-            QgsMessageLog.logMessage(f"zoom map to {loc.xmin},{loc.ymin},{loc.xmax},{loc.ymax} for {loc}")
+            mapCanvas.refresh() # TODO required? empirically: yes
         return lambda link: zoomToLocation() if link == "zoom" else panToLocation()
+
+
+    def getTrafo(self, srid):
+        """Get a transformation from the given SRID to project's CRS"""
+        project = QgsProject.instance()  # TODO can this ever be None?
+        ctx = project.transformContext()  # so datum transformations are considered
+        dstCrs = project.crs()  # with QGIS, the CRS seems to be a project propery
+        if (self.cachedTrafo is not None and
+            self.trafoFromSrid == srid and self.trafoToSrid == dstCrs.authid()):
+            return self.cachedTrafo  # re-use cached trafo
+        srcCrs = getCRS(srid)
+        assert srcCrs.isValid(), f"crs for {srid} is not valid"
+        assert dstCrs.isValid(), "project crs is not valid (!)"
+        QgsMessageLog.logMessage(f"Creating transformation from {srid} to {dstCrs.authid()}", level=Qgis.Info)
+        trafo = QgsCoordinateTransform(srcCrs, dstCrs, ctx)
+        self.cachedTrafo = trafo
+        self.trafoFromSrid = srid
+        self.trafoToSrid = dstCrs.authid()
+        return trafo
+
+
+#=== utils ======================================================
+
+def getCRS(key):
+    # EPSG:<code>
+    # PROJ:<proj>
+    # WKT:<wkt>
+    # POSTGIS:<srid>
+    # INTERNAL:<srsid>
+    # given no prefix, WKT is assumed!
+    if key is int:
+        key = f"EPSG:{key}"
+    if key is str:
+        try:
+            code = int(key)
+            return QgsCoordinateReferenceSystem(code)
+        except:
+            return QgsCoordinateReferenceSystem(key)
+    return QgsCoordinateReferenceSystem(key)
 
 
 # Clearing a Qt layout seems to be non-trivial; see:
