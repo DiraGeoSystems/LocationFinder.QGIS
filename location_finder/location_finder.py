@@ -132,13 +132,13 @@ class LocationFinderPlugin:
         self.clearResults()
         s = self.dockwidget.lineEditService.text()
         if len(s) > 0:
-            self.getServiceInfo(s)
+            self.doVersionRequest(s)
 
 
     def onQueryEnter(self):
         s = self.dockwidget.lineEditService.text()
         q = self.dockwidget.lineEditQuery.text()
-        self.performQuery(s, q)
+        self.doLookupRequest(s, q)
 
 
     def onQueryEdited(self):
@@ -231,7 +231,7 @@ class LocationFinderPlugin:
         return self.getFinderUrl(baseUrl, "version")
     
 
-    def getServiceInfo(self, baseUrl):
+    def doVersionRequest(self, baseUrl):
         try:
             url = self.getVersionUrl(baseUrl)
             r = requests.get(url, timeout=0.5)
@@ -241,13 +241,13 @@ class LocationFinderPlugin:
             r.raise_for_status() # raise error if status code indicates error
             settings = QgsSettings()
             settings.setValue("locationfinder/serviceUrl", baseUrl)
-            # TODO and/or store to project settings?
+            self.showVersionResults(r.json())
         except requests.exceptions.RequestException as e:
             self.reportError(f"request failed: {e}")
             self.dockwidget.plainTextEdit.setPlainText(str(e))
 
 
-    def performQuery(self, baseUrl, queryText):
+    def doLookupRequest(self, baseUrl, queryText):
         try:
             # TODO configurable timeout (coordinate with type throttling)
             # TODO configurable query parameters (sref, filter, limit)
@@ -257,8 +257,8 @@ class LocationFinderPlugin:
             QgsMessageLog.logMessage(f"{r.status_code} GET {r.url}", level=level)
             r.raise_for_status() # raise error if status code indicates error
             self.dockwidget.plainTextEdit.setPlainText(r.text)
-            locs = self.parseResults(r.json())
-            self.showResults(locs)
+            locs = self.parseLookupResults(r.json())
+            self.showLookupResults(locs)
         except requests.exceptions.RequestException as e:
             self.reportError(f"request failed: {e}")
             self.dockwidget.plainTextEdit.setPlainText(str(e))
@@ -277,7 +277,7 @@ class LocationFinderPlugin:
         return l
 
 
-    def parseResults(self, j):
+    def parseLookupResults(self, j):
         # j is the json returned by LF: {ok:true, info:"ok", sref:4326, count:123, locs:[...]}
         assert j['ok'] is True
         sref = j['sref'] if 'sref' in j else None
@@ -290,7 +290,48 @@ class LocationFinderPlugin:
         clear_layout(grid)
 
 
-    def showResults(self, locations):
+    def showVersionResults(self, j):
+        self.clearResults()
+        grid = self.dockwidget.gridLayoutResults
+        def addRow(label, name, bold=False):
+            row = grid.rowCount()
+            left = QLabel()
+            left.setText(label)
+            grid.addWidget(left, row, 0)
+            value = j[name] if name in j else "n/a"
+            right = QLabel()
+            right.setWordWrap(True)
+            right.setToolTip(name)
+            if bold: right.setText(f"<b>{value}</b>")
+            else: right.setText(f"{value}")
+            grid.addWidget(right, row, 1)
+        def addSeparator():
+            row = grid.rowCount()
+            left = QFrame()
+            left.setFrameStyle(QFrame.HLine | QFrame.Plain)
+            grid.addWidget(left, row, 0)
+            right = QFrame()
+            right.setFrameStyle(QFrame.HLine | QFrame.Plain)
+            grid.addWidget(right, row, 1)
+        addRow("Version", "version", True)
+        addRow("Description", "serviceDescription")
+        addRow("CRS", "sref", True)
+        addSeparator()
+        addRow("Location count", "locationCount")
+        addRow("Location types<br>(normalized)", "locationTypes")
+        addRow("Explicit fields", "explicitFields")
+        addRow("Index name", "indexName")
+        addRow("Last modified", "lastModified")
+        addRow("Total bytes", "totalBytes")
+        addRow("Start time", "startTime", True)
+        addSeparator()
+        addRow("#version requests", "versionRequests")
+        addRow("#lookup requests", "lookupRequests")
+        addRow("#reverse requests", "reverseRequests")
+        addRow("#location requests", "locationRequests")
+
+
+    def showLookupResults(self, locations):
         self.clearResults()
         grid = self.dockwidget.gridLayoutResults
         for i, loc in enumerate(locations):
