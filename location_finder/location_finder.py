@@ -60,7 +60,7 @@ class LocationFinderPlugin:
             self.plugin_dir,
             'i18n',
             'LocationFinder_{}.qm'.format(locale))
-        
+
         QgsMessageLog.logMessage("Locale path: {}".format(locale_path), level=Qgis.Info) # TODO DEBUG DROP
 
         if os.path.exists(locale_path):
@@ -105,7 +105,7 @@ class LocationFinderPlugin:
         QgsMessageLog.logMessage("** initGui LocationFinder", level=Qgis.Info)
 
         icon_path = ':/plugins/location_finder/icon.png'
-        
+
         icon = QIcon(icon_path)
         text = self.tr(u'LocationFinder')
         parent = self.iface.mainWindow()
@@ -175,7 +175,6 @@ class LocationFinderPlugin:
     def run(self):
         """Run method that loads and starts the plugin"""
         QgsMessageLog.logMessage("** run LocationFinder", level=Qgis.Info) # TODO TEST DROP
-        self.iface.messageBar().pushMessage("LocationFinder", "Hello World", level=Qgis.Info, duration=5) # TODO TEST DROP
 
         if not self.pluginIsActive:
             self.pluginIsActive = True
@@ -229,7 +228,7 @@ class LocationFinderPlugin:
 
     def getVersionUrl(self, baseUrl):
         return self.getFinderUrl(baseUrl, "version")
-    
+
 
     def doVersionRequest(self, baseUrl):
         try:
@@ -401,14 +400,14 @@ def getCRS(key):
     # POSTGIS:<srid>
     # INTERNAL:<srsid>
     # given no prefix, WKT is assumed!
-    if key is int:
+    if type(key) is int:
         key = f"EPSG:{key}"
-    if key is str:
+    if type(key) is str:
         try:
             code = int(key)
-            return QgsCoordinateReferenceSystem(code)
+            key = f"EPSG:{code}"
         except:
-            return QgsCoordinateReferenceSystem(key)
+            pass
     return QgsCoordinateReferenceSystem(key)
 
 
