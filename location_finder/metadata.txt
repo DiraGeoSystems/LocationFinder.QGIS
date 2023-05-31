@@ -1,47 +1,46 @@
-# This file contains metadata for your plugin.
-
-# This file should be included when you package your plugin.# Mandatory items:
+# Plugin metadata, required for all QGIS plugins
+# Mandatory items: name, description, version, qgisMinimumVersion,
+#   author, email, repository, tracker, about
 
 [general]
 name=LocationFinder
+description=Allow QGIS to use LocationFinder (interactive geocoding)
+
+version=0.1.0
 qgisMinimumVersion=3.0
-description=QGIS Client for LocationFinder (interactive geocoding)
-version=0.1
+
 author=ujr for Dira GeoSystems
 email=ujr@dirageosystems.ch
 
-about=This QGIS Plugin allows interactive geocoding against a LocationFinder instance. The user interface consists of a dockable window where you can type location names and see geocoded results. About LocationFinder, please see https://dirageosystems.ch
-
-tracker=https://github.com/dirageosystems/LocationFinder.QGIS/issues
+homepage=http://dirageosystems.ch
 repository=https://github.com/dirageosystems/LocationFinder.QGIS
-# End of mandatory metadata
+tracker=https://github.com/dirageosystems/LocationFinder.QGIS/issues
 
-# Recommended items:
-
-hasProcessingProvider=no
-# Uncomment the following line and add your changelog:
-# changelog=
+about=This QGIS Plugin allows interactive geocoding against
+    a LocationFinder instance. The user interface consists
+    of a dockable window where you can type location names
+    and see geocoded results.
+    About LocationFinder, please see https://dirageosystems.ch
 
 # Tags are comma separated with spaces allowed
 tags=dira, geocode, geocoder, geocoding, python
 
-homepage=http://dirageosystems.ch
 category=Plugins
 icon=icon.png
-# experimental flag
+
+# deprecated applies to all versions, experimental just to this one:
+deprecated=False
 experimental=True
 
-# deprecated flag (applies to the whole plugin, not just a single version)
-deprecated=False
-
 # Since QGIS 3.8, a comma separated list of plugins to be installed
-# (or upgraded) can be specified.
-# Check the documentation for more information.
+# (or upgraded) can be specified. (We have no such dependencies.)
 # plugin_dependencies=
 
 Category of the plugin: Raster, Vector, Database or Web
 # category=
 
-# If the plugin can run on QGIS Server.
+# This plugin has no server interface and no processing algorithms:
 server=False
+hasProcessingProvider=no
 
+# changelog=
