@@ -11,13 +11,13 @@
 
         begin                : 2023-05-26
         git sha              : $Format:%H$
-        copyright            : (C) 2023 by ujr for Dira GeoSystems
+        copyright            : (c) 2023 by ujr for Dira GeoSystems
         email                : ujr@dirageosystems.ch
         license              : MIT License
  ***************************************************************************/
 """
 
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QDateTime, QTimer
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QLabel, QFrame
 from qgis.core import Qgis, QgsMessageLog, QgsSettings, QgsProject
@@ -78,6 +78,12 @@ class LocationFinderPlugin:
         self.dockwidget = None
         self.action = None
 
+        # Throttled auto-requesting:
+        self.requestDelay = 300   # milliseconds
+        self.scheduleTime = None  # time scheduled (ms since epoch)
+        self.timer = QTimer()
+        self.timer.setSingleShot(True)
+
         # Cached transformation:
         self.cachedTrafo = None
         self.trafoFromSrid = None
@@ -120,7 +126,13 @@ class LocationFinderPlugin:
         self.iface.addToolBarIcon(self.action)
         self.iface.addPluginToMenu(self.tr(u'LocationFinder'), self.action)
 
-    #--------------------------------------------------------------------------
+
+    def unload(self):
+        """Removes the plugin menu item and icon from QGIS GUI."""
+        QgsMessageLog.logMessage("** unload LocationFinder", level=Qgis.Info) # TODO TEST DROP
+        self.iface.removePluginMenu(self.tr(u"&LocationFinder"), self.action)
+        self.iface.removeToolBarIcon(self.action)
+
 
     def onConfigClicked(self):
         """User clicked the Config button on the dock widget: show the (modal) config dialog"""
@@ -136,40 +148,25 @@ class LocationFinderPlugin:
 
 
     def onQueryEnter(self):
-        s = self.dockwidget.lineEditService.text()
-        q = self.dockwidget.lineEditQuery.text()
-        self.doLookupRequest(s, q)
+        self.scheduleLookup(immediate=True)
 
 
     def onQueryEdited(self):
         # called when the user edited text (not when programmatically modified)
-        # TODO request a query, but only after some delay (a "typing pause")
-        # TODO consider QTimer() or else use Timer from threading for throttling
-        pass
+        autoQuery = self.dockwidget.checkBoxAuto.isChecked()
+        if autoQuery:
+            self.scheduleLookup(immediate=False)
 
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
-
-        #print "** CLOSING LocationFinder"
-
-        # disconnects
+        # disconnects:
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
-
-        # remove this statement if dockwidget is to remain
-        # for reuse if plugin is reopened
-        # Commented next statement since it causes QGIS crashe
-        # when closing the docked window:
-        # self.dockwidget = None
-
+        # remove this statement if dockwidget is to remain for reuse
+        # if plugin is reopened; commented since it causes QGIS to
+        # crash when closing the docked window:
+        #self.dockwidget = None
         self.pluginIsActive = False
-
-
-    def unload(self):
-        """Removes the plugin menu item and icon from QGIS GUI."""
-        QgsMessageLog.logMessage("** unload LocationFinder", level=Qgis.Info) # TODO TEST DROP
-        self.iface.removePluginMenu(self.tr(u"&LocationFinder"), self.action)
-        self.iface.removeToolBarIcon(self.action)
 
 
     def run(self):
@@ -206,6 +203,10 @@ class LocationFinderPlugin:
             self.dockwidget.show()
 
 
+    def now(self):
+        return QDateTime.currentMSecsSinceEpoch()
+
+
     def reportError(self, msg):
         mbar = self.iface.messageBar()
         mbar.pushMessage("LocationFinder", msg, level=Qgis.Critical)
@@ -230,8 +231,9 @@ class LocationFinderPlugin:
         return self.getFinderUrl(baseUrl, "version")
 
 
-    def doVersionRequest(self, baseUrl):
+    def doVersionRequest(self, baseUrl=None):
         try:
+            baseUrl = baseUrl or self.dockwidget.lineEditService.text()
             url = self.getVersionUrl(baseUrl)
             r = requests.get(url, timeout=0.5)
             level = Qgis.Info if r.status_code < 400 else Qgis.Critical
@@ -246,10 +248,12 @@ class LocationFinderPlugin:
             self.dockwidget.plainTextEdit.setPlainText(str(e))
 
 
-    def doLookupRequest(self, baseUrl, queryText):
+    def doLookupRequest(self, baseUrl=None, queryText=None):
         try:
             # TODO configurable timeout (coordinate with type throttling)
             # TODO configurable query parameters (sref, filter, limit)
+            baseUrl = baseUrl or self.dockwidget.lineEditService.text()
+            queryText = queryText or self.dockwidget.lineEditQuery.text()
             url = self.getLookupUrl(baseUrl)
             r = requests.get(url, params={"query": queryText}, timeout=0.5)
             level = Qgis.Info if r.status_code < 400 else Qgis.Critical
@@ -389,6 +393,26 @@ class LocationFinderPlugin:
         self.trafoFromSrid = srid
         self.trafoToSrid = dstCrs.authid()
         return trafo
+
+
+    def scheduleLookup(self, immediate=False):
+        if immediate:
+            self.scheduleTime = None
+            self.timer.stop()
+            self.doLookupRequest()
+        else:
+            self.scheduleTime = self.now()
+            self.timer.timeout.connect(self.checkPendingLookup)
+            self.timer.start(self.requestDelay) # TODO configurable, coordinate with request timeout
+
+
+    def checkPendingLookup(self):
+        if self.scheduleTime is None: return
+        # If timer is interval (not single show), uncomment next line:
+        #if self.now() < self.scheduleTime + self.requestDelay: return
+        self.scheduleTime = None
+        self.timer.stop()
+        self.doLookupRequest()
 
 
 #=== utils ======================================================
