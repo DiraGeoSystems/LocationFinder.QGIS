@@ -8,10 +8,17 @@ Geocoding finds coordinates given a name (or an address).
 Reverse geocoding finds the closest named point (or address)
 given a point's coordinates.
 
-**Installation:** copy the [location_finder](./location_finder/)
-folder (not only its contents) to your QGIS profile's python plugin
-folder: %APPDATA%/QGIS/QGIS3/profiles/default/python/plugins/ (Windows)
-or ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins (Linux)
+## Deploy locally
+
+Copy the [location_finder](./location_finder/) folder (not only
+its contents) to your QGIS profile's python plugins folder:
+`%APPDATA%\QGIS\QGIS3\profiles\default\python\plugins` (Windows) or
+`~/.local/share/QGIS/QGIS3/profiles/default/python/plugins` (Linux).
+
+You may use the provided scripts [deploy.bat](./deploy.bat) or
+[deploy.sh](./deploy.sh) for this purpose, and you may use the
+[Plugin Reloader](https://plugins.qgis.org/plugins/plugin_reloader/)
+plugin to reload the deployed plugin into a running instance of QGIS.
 
 ## Technical Notes
 
