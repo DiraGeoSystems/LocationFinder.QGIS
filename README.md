@@ -8,6 +8,9 @@ Geocoding finds coordinates given a name (or an address).
 Reverse geocoding finds the closest named point (or address)
 given a point's coordinates.
 
+The published version is online in the QGIS plugins repo
+at <https://plugins.qgis.org/plugins/location_finder/>
+
 ## Deploy locally
 
 Copy the [location_finder](./location_finder/) folder (not only
@@ -19,6 +22,14 @@ You may use the provided scripts [deploy.bat](./deploy.bat) or
 [deploy.sh](./deploy.sh) for this purpose, and you may use the
 [Plugin Reloader](https://plugins.qgis.org/plugins/plugin_reloader/)
 plugin to reload the deployed plugin into a running instance of QGIS.
+
+## Publish to plugins.qgis.org
+
+Create a zip archive from the [location_finder](./location_finder/)
+**folder** (not only the folder's contents) and upload it to
+<https://plugins.qgis.org> (you will need an OSGeo ID). The
+provided script [publish.sh](./publish.sh) may be helpful; for
+detailed instructions, see <https://plugins.qgis.org/publish/>
 
 ## Technical Notes
 
