@@ -158,6 +158,12 @@ class LocationFinderPlugin:
             self.scheduleLookup(immediate=False)
 
 
+    def onAutoQueryChanged(self):
+        autoQuery = self.dockwidget.checkBoxAuto.isChecked()
+        settings = QgsSettings()
+        settings.setValue("locationfinder/autoQuery", "on" if autoQuery else "off")
+
+
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
         # disconnects:
@@ -171,8 +177,6 @@ class LocationFinderPlugin:
 
     def run(self):
         """Run method that loads and starts the plugin"""
-        QgsMessageLog.logMessage("** run LocationFinder", level=Qgis.Info) # TODO TEST DROP
-
         if not self.pluginIsActive:
             self.pluginIsActive = True
 
@@ -189,6 +193,7 @@ class LocationFinderPlugin:
                 self.dockwidget.lineEditQuery.returnPressed.connect(self.onQueryEnter)
                 # TODO nice-to-have: Escape clears query (and results)
                 self.dockwidget.lineEditService.returnPressed.connect(self.onServiceEnter)
+                self.dockwidget.checkBoxAuto.stateChanged.connect(self.onAutoQueryChanged)
 
             # connect to provide cleanup on closing of dockwidget
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
@@ -196,6 +201,11 @@ class LocationFinderPlugin:
             settings = QgsSettings()
             serviceUrl = settings.value("locationfinder/serviceUrl", "")
             self.dockwidget.lineEditService.setText(serviceUrl)
+            autoQuery = settings.value("locationfinder/autoQuery", False)
+            if type(autoQuery) is not bool:
+                autoQuery = str(autoQuery)
+                autoQuery = autoQuery.lower() in ["true", "on", "1", "enabled"]
+            self.dockwidget.checkBoxAuto.setChecked(autoQuery)
 
             # show the dockwidget
             # TODO: fix to allow choice of dock location
