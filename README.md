@@ -17,11 +17,14 @@ or ~/.local/share/QGIS/QGIS3/profiles/default/python/plugins (Linux)
 
 - a Python Plugin for QGIS
 - initial template created with the QGIS Plugin Builder,
-  see [Plugin Builder Results](./location_finder/README.txt)
+  see <http://g-sherman.github.io/Qgis-Plugin-Builder/>
+- the plugin itself consists of the [location_finder](./location_finder/)
+  folder; a zip archive of it can be uploaded to the QGIS plugin repo
+- I prefer keeping the plugin folder clear of dev and build tooling
+  and thus moved things like Makefile, scripts/, and test/ out of it
+  (the Makefile is therefore no longer valid and should be revised)
 - UI created using the free Qt Designer that comes with the QGIS
   OSGeo4W installer (Windows .msi)
-- the plugin itself consists of the [location_finder](./location_finder/)
-  folder
 - tooling: VS Code with the Python extension (had to create *.env* file
   that sets the PYTHONPATH variable for QGIS and Qt stuff to be found)
 - use pyrcc5 to compile *resources.qrc* into *resources.py* – pyrcc5
