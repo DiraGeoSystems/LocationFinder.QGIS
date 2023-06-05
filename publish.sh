@@ -6,6 +6,7 @@
 ZIPTOOL=/usr/bin/zip
 ARCHIVE=location_finder.zip
 
+test -f "$ARCHIVE" && rm -f "$ARCHIVE"
 "$ZIPTOOL" -r "$ARCHIVE" ./location_finder && cat << EOF
 
 Upload $ARCHIVE to https://plugins.qgis.org/plugins

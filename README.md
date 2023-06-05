@@ -11,7 +11,11 @@ given a point's coordinates.
 The published version is online in the QGIS plugins repo
 at <https://plugins.qgis.org/plugins/location_finder/>
 
-## Deploy locally
+This documentation addresses developers. For user-directed
+documentation, see the [README.md](location_finder/README.md)
+inside the plugin folder.
+
+## Deploy locally (for testing)
 
 Copy the [location_finder](./location_finder/) folder (not only
 its contents) to your QGIS profile's python plugins folder:
@@ -33,7 +37,7 @@ detailed instructions, see <https://plugins.qgis.org/publish/>
 
 ## Technical Notes
 
-- a Python Plugin for QGIS
+- this is a Python Plugin for QGIS
 - initial template created with the QGIS Plugin Builder,
   see <http://g-sherman.github.io/Qgis-Plugin-Builder/>
 - the plugin itself consists of the [location_finder](./location_finder/)

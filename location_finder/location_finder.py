@@ -113,7 +113,7 @@ class LocationFinderPlugin:
         icon_path = ':/plugins/location_finder/icon.png'
 
         icon = QIcon(icon_path)
-        text = self.tr(u'LocationFinder')
+        text = self.tr(u'Open LocationFinder')
         parent = self.iface.mainWindow()
         action = QAction(icon, text, parent)
         action.triggered.connect(self.run)

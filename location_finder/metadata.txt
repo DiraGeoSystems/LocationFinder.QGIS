@@ -12,14 +12,12 @@ qgisMinimumVersion=3.0
 author=ujr for Dira GeoSystems
 email=ujr@dirageosystems.ch
 
-homepage=http://dirageosystems.ch
+homepage=https://github.com/dirageosystems/LocationFinder.QGIS
 repository=https://github.com/dirageosystems/LocationFinder.QGIS
 tracker=https://github.com/dirageosystems/LocationFinder.QGIS/issues
 
-about=This QGIS Plugin allows interactive geocoding against
-    a LocationFinder instance. The user interface consists
-    of a dockable window where you can type location names
-    and see geocoded results.
+about=This QGIS Plugin allows interactive geocoding against a LocationFinder instance.
+    The user interface consists of a dockable window where you can type location names and see geocoded results.
     About LocationFinder, please see https://dirageosystems.ch
 
 # Tags are comma separated with spaces allowed
