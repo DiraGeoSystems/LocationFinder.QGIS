@@ -33,7 +33,10 @@
       <item>
        <widget class="QLineEdit" name="lineEditService">
         <property name="toolTip">
-         <string>service base URL - hit Enter to retrieve version and remember URL in settings</string>
+         <string>service base URL - hit Enter to retrieve service information</string>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
         </property>
         <property name="placeholderText">
          <string>base URL of a LocationFinder service</string>

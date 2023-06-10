@@ -28,9 +28,11 @@ from qgis.gui import QgisInterface, QgsMapCanvas
 # Initialize Qt resources from file resources.py
 from .resources import *
 
-# Import the code for the DockWidget
 from .location_finder_dockwidget import LocationFinderDockWidget
+from .config_dialog import ConfigDialog
 from .location import Location
+from .config import Config
+
 import os.path
 import requests
 
@@ -70,7 +72,11 @@ class LocationFinderPlugin:
 
         self.pluginIsActive = False
         self.dockwidget = None
+        self.configdialog = None
         self.action = None
+
+        self.config = Config()
+        self.config.load()
 
         # Throttled auto-requesting:
         self.requestDelay = 300   # milliseconds # TODO configurable?
@@ -124,14 +130,24 @@ class LocationFinderPlugin:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         QgsMessageLog.logMessage("** unload LocationFinder", level=Qgis.Info) # TODO TEST DROP
+        self.config.save()
         self.iface.removePluginMenu(self.tr(u"&LocationFinder"), self.action)
         self.iface.removeToolBarIcon(self.action)
 
 
     def onConfigClicked(self):
         """User clicked the Config button on the dock widget: show the (modal) config dialog"""
-        QgsMessageLog.logMessage("LocationFinder Plugin Config not yet implemented", level=Qgis.Warning)
-        self.iface.messageBar().pushMessage("Oops", "Config not yet implemented, enter base URL into Service field", level=Qgis.Warning, duration=3) # TODO TEST DROP
+        self.configdialog.setConfig(self.config)
+        self.configdialog.show()
+        result = self.configdialog.exec_()
+        if result:  # user clicked OK
+            self.configdialog.getConfig(self.config)
+            self.config.save()
+            self.dockwidget.lineEditService.setText(self.config.url)
+            self.dockwidget.checkBoxAuto.setChecked(self.config.autoQuery)
+            if self.config.url:
+                self.doVersionRequest(self.config.url)
+        #else: user canceled
 
 
     def onServiceEnter(self):
@@ -147,20 +163,18 @@ class LocationFinderPlugin:
 
     def onQueryEdited(self):
         # called when the user edited text (not when programmatically modified)
-        autoQuery = self.dockwidget.checkBoxAuto.isChecked()
-        if autoQuery:
+        self.config.autoQuery = self.dockwidget.checkBoxAuto.isChecked()
+        if self.config.autoQuery:
             self.scheduleLookup(immediate=False)
 
 
     def onAutoQueryChanged(self):
-        autoQuery = self.dockwidget.checkBoxAuto.isChecked()
-        settings = QgsSettings()
-        settings.setValue("locationfinder/autoQuery", "on" if autoQuery else "off")
+        self.config.autoQuery = self.dockwidget.checkBoxAuto.isChecked()
+        self.config.save()
 
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
-        # disconnects:
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
         # remove this statement if dockwidget is to remain for reuse
         # if plugin is reopened; commented since it causes QGIS to
@@ -174,7 +188,8 @@ class LocationFinderPlugin:
         if not self.pluginIsActive:
             self.pluginIsActive = True
 
-            #print "** STARTING LocationFinder"
+            if self.configdialog == None:
+                self.configdialog = ConfigDialog()
 
             # dockwidget may not exist if:
             #    first run of plugin
@@ -192,19 +207,13 @@ class LocationFinderPlugin:
             # connect to provide cleanup on closing of dockwidget
             self.dockwidget.closingPlugin.connect(self.onClosePlugin)
 
-            settings = QgsSettings()
-            serviceUrl = settings.value("locationfinder/serviceUrl", "")
-            self.dockwidget.lineEditService.setText(serviceUrl)
-            autoQuery = settings.value("locationfinder/autoQuery", False)
-            if type(autoQuery) is not bool:
-                autoQuery = str(autoQuery)
-                autoQuery = autoQuery.lower() in ["true", "on", "1", "enabled"]
-            self.dockwidget.checkBoxAuto.setChecked(autoQuery)
-
-            # show the dockwidget
             # TODO: fix to allow choice of dock location
             self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
             self.dockwidget.show()
+
+        self.dockwidget.lineEditService.setText(self.config.url)
+        self.dockwidget.lineEditQuery.setText("")
+        self.dockwidget.checkBoxAuto.setChecked(self.config.autoQuery)
 
 
     def now(self):
@@ -243,9 +252,8 @@ class LocationFinderPlugin:
             level = Qgis.Info if r.status_code < 400 else Qgis.Critical
             QgsMessageLog.logMessage(f"{r.status_code} GET {r.url}", level=level)
             self.dockwidget.plainTextEdit.setPlainText(r.text)
-            r.raise_for_status() # raise error if status code indicates error
-            settings = QgsSettings()
-            settings.setValue("locationfinder/serviceUrl", baseUrl)
+            r.raise_for_status() # raise exception if status code indicates error
+            self.config.save()
             self.showVersionResults(r.json())
         except requests.exceptions.RequestException as e:
             self.reportError(f"request failed: {e}")
@@ -255,17 +263,23 @@ class LocationFinderPlugin:
     def doLookupRequest(self, baseUrl=None, queryText=None):
         try:
             # TODO configurable timeout (coordinate with type throttling)
-            # TODO configurable query parameters (sref, filter, limit)
             baseUrl = baseUrl or self.dockwidget.lineEditService.text()
             queryText = queryText or self.dockwidget.lineEditQuery.text()
             url = self.getLookupUrl(baseUrl)
-            r = requests.get(url, params={"query": queryText}, timeout=0.5)
-            level = Qgis.Info if r.status_code < 400 else Qgis.Critical
-            QgsMessageLog.logMessage(f"{r.status_code} GET {r.url}", level=level)
-            r.raise_for_status() # raise error if status code indicates error
+            params = {"query": queryText}
+            if self.config.filter:
+                params["filter"] = self.config.filter
+            if self.config.sref is not None:
+                params["sref"] = self.config.sref
+            if self.config.limit is not None and self.config.limit >= 0:
+                params["limit"] = self.config.limit
+            r = requests.get(url, params=params, timeout=0.5)
+            if self.config.debugMode:
+                logInfo(f"{r.status_code} GET {r.url}")
             self.dockwidget.plainTextEdit.setPlainText(r.text)
             locs = self.parseLookupResults(r.json())
             self.showLookupResults(locs)
+            r.raise_for_status() # raise exception if status code indicates error
         except requests.exceptions.RequestException as e:
             self.reportError(f"request failed: {e}")
             self.dockwidget.plainTextEdit.setPlainText(str(e))
