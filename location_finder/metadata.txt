@@ -6,7 +6,7 @@
 name=LocationFinder
 description=Allow QGIS to use LocationFinder (interactive geocoding)
 
-version=0.1.0
+version=0.1.1
 qgisMinimumVersion=3.0
 
 author=ujr for Dira GeoSystems
@@ -28,7 +28,7 @@ icon=icon.png
 
 # deprecated applies to all versions, experimental just to this one:
 deprecated=False
-experimental=True
+experimental=False
 
 # Since QGIS 3.8, a comma separated list of plugins to be installed
 # (or upgraded) can be specified. (We have no such dependencies.)
@@ -41,4 +41,4 @@ Category of the plugin: Raster, Vector, Database or Web
 server=False
 hasProcessingProvider=no
 
-# changelog=
+changelog=See README.md file included in the plugin

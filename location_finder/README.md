@@ -41,3 +41,10 @@ released as open source under the terms of the MIT License,
 <https://opensource.org/license/MIT/>. To create your own
 derivatives, consider starting from the source code repository
 at <https://github.com/dirageosystems/LocationFinder.QGIS>
+
+## Changelog
+
+**0.1.1** config dialog, various small improvements, remove
+experimental flag
+
+**0.1.0** first public release, marked experimental
