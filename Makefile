@@ -35,15 +35,17 @@ LOCALES =
 # translation
 SOURCES = \
 	__init__.py \
-	location_finder.py location_finder_dockwidget.py location.py
+	location_finder.py location.py config.py \
+	location_finder_dockwidget.py config_dialog.py
 
 PLUGINNAME = location_finder
 
 PY_FILES = \
 	__init__.py \
-	location_finder.py location_finder_dockwidget.py location.py
+	location_finder.py location.py config.py \
+	location_finder_dockwidget.py config_dialog.py
 
-UI_FILES = location_finder_dockwidget_base.ui
+UI_FILES = location_finder_dockwidget_base.ui config_dialog_base.ui
 
 EXTRAS = metadata.txt icon.png
 
@@ -71,7 +73,7 @@ QGISDIR=.local/share/QGIS/QGIS3/profiles/default/python/plugins
 
 HELP = help/build/html
 
-PLUGIN_UPLOAD = $(c)/plugin_upload.py
+PLUGIN_UPLOAD = scripts/plugin_upload.py
 
 RESOURCE_SRC=$(shell grep '^ *<file' resources.qrc | sed 's@</file>@@g;s/.*>//g' | tr '\n' ' ')
 
