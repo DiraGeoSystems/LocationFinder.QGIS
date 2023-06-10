@@ -68,18 +68,12 @@ class LocationFinderPlugin:
             self.translator.load(locale_path)
             QCoreApplication.installTranslator(self.translator)
 
-        # Declare instance attributes
-        self.menu = self.tr(u'&LocationFinder')
-        # TODO: We are going to let the user set this up in a future iteration
-        #self.toolbar = self.iface.addToolBar(u'LocationFinder')
-        #self.toolbar.setObjectName(u'LocationFinder')
-
         self.pluginIsActive = False
         self.dockwidget = None
         self.action = None
 
         # Throttled auto-requesting:
-        self.requestDelay = 300   # milliseconds
+        self.requestDelay = 300   # milliseconds # TODO configurable?
         self.scheduleTime = None  # time scheduled (ms since epoch)
         self.timer = QTimer()
         self.timer.setSingleShot(True)
@@ -108,7 +102,7 @@ class LocationFinderPlugin:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        QgsMessageLog.logMessage("** initGui LocationFinder", level=Qgis.Info)
+        #QgsMessageLog.logMessage("** initGui LocationFinder", level=Qgis.Info)
 
         icon_path = ':/plugins/location_finder/icon.png'
 
@@ -342,6 +336,7 @@ class LocationFinderPlugin:
         addRow("#lookup requests", "lookupRequests")
         addRow("#reverse requests", "reverseRequests")
         addRow("#location requests", "locationRequests")
+        self.dockwidget.scrollArea.ensureVisible(0,0)
 
 
     def showLookupResults(self, locations):
@@ -364,6 +359,7 @@ class LocationFinderPlugin:
             frame.setFrameShape(QFrame.HLine)
             frame.setLineWidth(1)
             grid.addWidget(frame, 2*i+1, 0)
+        self.dockwidget.scrollArea.ensureVisible(0,0)
 
 
     def getClickClosure(self, loc):
@@ -390,7 +386,7 @@ class LocationFinderPlugin:
         """Get a transformation from the given SRID to project's CRS"""
         project = QgsProject.instance()  # TODO can this ever be None?
         ctx = project.transformContext()  # so datum transformations are considered
-        dstCrs = project.crs()  # with QGIS, the CRS seems to be a project propery
+        dstCrs = project.crs()  # with QGIS, the CRS seems to be a project property
         if (self.cachedTrafo is not None and
             self.trafoFromSrid == srid and self.trafoToSrid == dstCrs.authid()):
             return self.cachedTrafo  # re-use cached trafo
@@ -398,11 +394,10 @@ class LocationFinderPlugin:
         assert srcCrs.isValid(), f"crs for {srid} is not valid"
         assert dstCrs.isValid(), "project crs is not valid (!)"
         QgsMessageLog.logMessage(f"Creating transformation from {srid} to {dstCrs.authid()}", level=Qgis.Info)
-        trafo = QgsCoordinateTransform(srcCrs, dstCrs, ctx)
-        self.cachedTrafo = trafo
+        self.cachedTrafo = QgsCoordinateTransform(srcCrs, dstCrs, ctx)
         self.trafoFromSrid = srid
         self.trafoToSrid = dstCrs.authid()
-        return trafo
+        return self.cachedTrafo
 
 
     def scheduleLookup(self, immediate=False):
@@ -413,7 +408,7 @@ class LocationFinderPlugin:
         else:
             self.scheduleTime = self.now()
             self.timer.timeout.connect(self.checkPendingLookup)
-            self.timer.start(self.requestDelay) # TODO configurable, coordinate with request timeout
+            self.timer.start(self.requestDelay)
 
 
     def checkPendingLookup(self):
