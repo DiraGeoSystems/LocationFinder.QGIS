@@ -63,8 +63,6 @@ class LocationFinderPlugin:
             'i18n',
             'LocationFinder_{}.qm'.format(locale))
 
-        QgsMessageLog.logMessage("Locale path: {}".format(locale_path), level=Qgis.Info) # TODO DEBUG DROP
-
         if os.path.exists(locale_path):
             self.translator = QTranslator()
             self.translator.load(locale_path)
@@ -88,6 +86,9 @@ class LocationFinderPlugin:
         self.cachedTrafo = None
         self.trafoFromSrid = None
         self.trafoToSrid = None
+
+        if self.config.debugMode:
+            logInfo(f"Locale path: {locale_path}")
 
 
     # noinspection PyMethodMayBeStatic
@@ -129,7 +130,8 @@ class LocationFinderPlugin:
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-        QgsMessageLog.logMessage("** unload LocationFinder", level=Qgis.Info) # TODO TEST DROP
+        if self.config.debugMode:
+            logInfo("** unload LocationFinder")
         self.config.save()
         self.iface.removePluginMenu(self.tr(u"&LocationFinder"), self.action)
         self.iface.removeToolBarIcon(self.action)
@@ -220,9 +222,10 @@ class LocationFinderPlugin:
         return QDateTime.currentMSecsSinceEpoch()
 
 
-    def reportError(self, msg):
+    def reportError(self, msg, duration=None):
+        logError(msg)
         mbar = self.iface.messageBar()
-        mbar.pushMessage("LocationFinder", msg, level=Qgis.Critical)
+        mbar.pushMessage("LocationFinder", msg, level=Qgis.Critical, duration=duration)
 
 
     def getFinderUrl(self, baseUrl, suffix):
@@ -249,14 +252,17 @@ class LocationFinderPlugin:
             baseUrl = baseUrl or self.dockwidget.lineEditService.text()
             url = self.getVersionUrl(baseUrl)
             r = requests.get(url, timeout=0.5)
-            level = Qgis.Info if r.status_code < 400 else Qgis.Critical
-            QgsMessageLog.logMessage(f"{r.status_code} GET {r.url}", level=level)
+            if self.config.debugMode:
+                logInfo(f"{r.status_code} GET {r.url}")
             self.dockwidget.plainTextEdit.setPlainText(r.text)
             r.raise_for_status() # raise exception if status code indicates error
             self.config.save()
             self.showVersionResults(r.json())
         except requests.exceptions.RequestException as e:
             self.reportError(f"request failed: {e}")
+            self.dockwidget.plainTextEdit.setPlainText(str(e))
+        except Exception as e:
+            self.reportError(f"error doing version request: {e}")
             self.dockwidget.plainTextEdit.setPlainText(str(e))
 
 
@@ -277,11 +283,15 @@ class LocationFinderPlugin:
             if self.config.debugMode:
                 logInfo(f"{r.status_code} GET {r.url}")
             self.dockwidget.plainTextEdit.setPlainText(r.text)
-            locs = self.parseLookupResults(r.json())
-            self.showLookupResults(locs)
             r.raise_for_status() # raise exception if status code indicates error
+            j = r.json()
+            self.showLookupResults(j)
         except requests.exceptions.RequestException as e:
-            self.reportError(f"request failed: {e}")
+            self.reportError(f"Lookup request failed: {e}")
+            self.dockwidget.plainTextEdit.setPlainText(str(e))
+            self.clearResults()
+        except Exception as e:
+            self.reportError(f"Error doing lookup request: {e}")
             self.dockwidget.plainTextEdit.setPlainText(str(e))
             self.clearResults()
 
@@ -306,12 +316,25 @@ class LocationFinderPlugin:
         return [self.parseLocation(l, sref) for l in locs]
 
 
+    def showFinderError(self, msg):
+        grid = self.dockwidget.gridLayoutResults
+        clear_layout(grid)
+        label = QLabel()
+        label.setText(f"<b>Error</b> from LocationFinder:<br>{msg}")
+        label.setWordWrap(True)
+        grid.addWidget(label, 0, 0)
+        self.reportError(f"Error from LocationFinder: {msg}", duration=5)
+
+
     def clearResults(self):
         grid = self.dockwidget.gridLayoutResults
         clear_layout(grid)
 
 
     def showVersionResults(self, j):
+        if not j['ok']:
+            self.showFinderError(j['info'])
+            return
         self.clearResults()
         grid = self.dockwidget.gridLayoutResults
         def addRow(label, name, bold=False):
@@ -353,9 +376,13 @@ class LocationFinderPlugin:
         self.dockwidget.scrollArea.ensureVisible(0,0)
 
 
-    def showLookupResults(self, locations):
+    def showLookupResults(self, j):
+        if not j['ok']:
+            self.showFinderError(j['info'])
+            return
         self.clearResults()
         grid = self.dockwidget.gridLayoutResults
+        locations = self.parseLookupResults(j)
         for i, loc in enumerate(locations):
             label = QLabel()
             text = f'<b>{loc.name}</b><br>{loc.type}<br>'
@@ -407,7 +434,8 @@ class LocationFinderPlugin:
         srcCrs = getCRS(srid)
         assert srcCrs.isValid(), f"crs for {srid} is not valid"
         assert dstCrs.isValid(), "project crs is not valid (!)"
-        QgsMessageLog.logMessage(f"Creating transformation from {srid} to {dstCrs.authid()}", level=Qgis.Info)
+        if self.config.debugMode:
+            logInfo(f"Creating transformation from {srid} to {dstCrs.authid()}")
         self.cachedTrafo = QgsCoordinateTransform(srcCrs, dstCrs, ctx)
         self.trafoFromSrid = srid
         self.trafoToSrid = dstCrs.authid()
@@ -435,6 +463,15 @@ class LocationFinderPlugin:
 
 
 #=== utils ======================================================
+
+
+def logInfo(msg):
+    QgsMessageLog.logMessage(msg, level=Qgis.Info)
+
+
+def logError(msg):
+    QgsMessageLog.logMessage(msg, level=Qgis.Critical)
+
 
 def getCRS(key):
     # EPSG:<code>
