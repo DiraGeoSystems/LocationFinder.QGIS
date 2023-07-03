@@ -63,6 +63,8 @@ for detailed instructions, see <https://plugins.qgis.org/publish/>
 - message levels for use in `iface.messageBar().pushMessage()` and
   `QgsMessageLog.logMessage()` are: `Qgis.Info`, `Qgis.Warning`,
   `Qgis.Critical`, `Qgis.Success`
+- a detailed tutorial on building a Python plugin for QGIS3 is at
+  <https://www.qgistutorials.com/en/docs/3/building_a_python_plugin.html>
 
 ## Developer Resources
 
@@ -80,3 +82,16 @@ About Python environments with VS Code see
 
 Documentation for the *requests* HTTP library at  
 <https://requests.readthedocs.io/>
+
+## Background
+
+QGIS has no integrated geocoding client, but geocoding plugins exist,
+for example, [mmqgis][] provides batch geocoding, [GeoCoding][elpaso]
+provides interactive geocoding against Nominatim or Google data, and
+[BGK Geocoder][bkggeo] works against German BKG address data (requires
+a commercial license). <https://guides.library.ucsc.edu/DS/Resources/QGIS>
+has a limited comparison.
+
+[elpaso]: https://plugins.qgis.org/plugins/GeoCoding/
+[bkggeo]: https://plugins.qgis.org/plugins/bkggeocoder/
+[mmqgis]: https://plugins.qgis.org/plugins/mmqgis/
