@@ -46,7 +46,7 @@ class LocationFinderPlugin:
     Implementation of the QGIS Plugin. Required methods are
     the constructor __init__(), initGui(), and unload().
     Provisions for localization are kept from the generated
-    boilerplate code but yet really used.
+    boilerplate code but not yet really used.
     """
 
     def __init__(self, iface: QgisInterface):
@@ -222,10 +222,12 @@ class LocationFinderPlugin:
         return QDateTime.currentMSecsSinceEpoch()
 
 
-    def reportError(self, msg, duration=None):
+    def reportError(self, msg, duration=-1):
         logError(msg)
         mbar = self.iface.messageBar()
-        mbar.pushMessage("LocationFinder", msg, level=Qgis.Critical, duration=duration)
+        # pushMessage(title:str, text:str, showMore:str, level = Info, duration:int = -1)
+        # severity levels: Qgis.Info, Qgis.Warning, Qgis.Critical, Qgis.Success
+        mbar.pushMessage("LocationFinder", msg, level=Qgis.Warning, duration=duration)
 
 
     def getFinderUrl(self, baseUrl, suffix):
