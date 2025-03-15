@@ -38,6 +38,7 @@ class ConfigDialog(QtWidgets.QDialog, FORM_CLASS):
         self.spinBoxLimit.setValue(-1 if config.limit is None else config.limit)
         self.checkBoxAutoQuery.setChecked(config.autoQuery or False)
         self.checkBoxDebugMode.setChecked(config.debugMode or False)
+        self.checkBoxUseRequests.setChecked(config.useRequests or False)
 
 
     def getConfig(self, config: Config):
@@ -48,6 +49,7 @@ class ConfigDialog(QtWidgets.QDialog, FORM_CLASS):
         config.limit = self.spinBoxLimit.value()
         config.autoQuery = self.checkBoxAutoQuery.isChecked()
         config.debugMode = self.checkBoxDebugMode.isChecked()
+        config.useRequests = self.checkBoxUseRequests.isChecked()
 
 
 def canonical(text):

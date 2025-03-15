@@ -17,12 +17,14 @@
  ***************************************************************************/
 """
 
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QDateTime, QTimer
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QDateTime, QTimer, QUrl
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QLabel, QFrame
+from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.core import Qgis, QgsMessageLog, QgsSettings, QgsProject
 from qgis.core import QgsPointXY, QgsRectangle
 from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
+from qgis.core import QgsBlockingNetworkRequest
 from qgis.gui import QgisInterface, QgsMapCanvas
 
 # Initialize Qt resources from file resources.py
@@ -35,6 +37,7 @@ from .config import Config
 
 import os.path
 import requests
+import json
 
 
 # This plugin has one action, opening the LocationFinder dock window,
@@ -253,16 +256,10 @@ class LocationFinderPlugin:
         try:
             baseUrl = baseUrl or self.dockwidget.lineEditService.text()
             url = self.getVersionUrl(baseUrl)
-            r = requests.get(url, timeout=0.5)
-            if self.config.debugMode:
-                logInfo(f"{r.status_code} GET {r.url}")
-            self.dockwidget.plainTextEdit.setPlainText(r.text)
-            r.raise_for_status() # raise exception if status code indicates error
+            text = self.doFinderRequest(url)
+            self.dockwidget.plainTextEdit.setPlainText(text)
             self.config.save()
-            self.showVersionResults(r.json())
-        except requests.exceptions.RequestException as e:
-            self.reportError(f"request failed: {e}")
-            self.dockwidget.plainTextEdit.setPlainText(str(e))
+            self.showVersionResults(json.loads(text))
         except Exception as e:
             self.reportError(f"error doing version request: {e}")
             self.dockwidget.plainTextEdit.setPlainText(str(e))
@@ -281,21 +278,50 @@ class LocationFinderPlugin:
                 params["sref"] = self.config.sref
             if self.config.limit is not None and self.config.limit >= 0:
                 params["limit"] = self.config.limit
-            r = requests.get(url, params=params, timeout=0.5)
-            if self.config.debugMode:
-                logInfo(f"{r.status_code} GET {r.url}")
-            self.dockwidget.plainTextEdit.setPlainText(r.text)
-            r.raise_for_status() # raise exception if status code indicates error
-            j = r.json()
-            self.showLookupResults(j)
-        except requests.exceptions.RequestException as e:
-            self.reportError(f"Lookup request failed: {e}")
-            self.dockwidget.plainTextEdit.setPlainText(str(e))
-            self.clearResults()
+            text = self.doFinderRequest(url, params)
+            self.dockwidget.plainTextEdit.setPlainText(text)
+            self.showLookupResults(json.loads(text))
         except Exception as e:
             self.reportError(f"Error doing lookup request: {e}")
             self.dockwidget.plainTextEdit.setPlainText(str(e))
             self.clearResults()
+
+
+    def doFinderRequest(self, url, params=None):
+        """
+        Do an HTTP GET on the given url (without query string) and query params,
+        return the text content of the response. Use the QGIS network access
+        infrastructure (so QGIS proxy settings apply), unless configured to
+        use the popular requests library (understands redirects).
+        """
+        if self.config.useRequests:
+            r = requests.get(url, params=params, timeout=0.5)
+            if self.config.debugMode:
+                logInfo(f"{r.status_code} GET {r.url}")
+            r.raise_for_status()  # raise if status indicates error
+            return r.text  # could also return r.json()
+            # Note that requests also offers r.json() and throws
+            # requests.exceptions.RequestException on error
+
+        # use requests to urlencode and append params as query string:
+        req = requests.Request('GET', url, params=params)
+        url = req.prepare().url
+        # but now use QGIS networking infrastructure to GET the url:
+        request = QgsBlockingNetworkRequest()
+        if self.config.debugMode:
+            logInfo(f"do QGIS blocking GET {url}")
+        err = request.get(QNetworkRequest(QUrl(url)))
+        if err != QgsBlockingNetworkRequest.ErrorCode.NoError:
+          raise Exception(request.errorMessage() or f"request failed (code={err})")
+        reply = request.reply()
+        content = reply.content()
+        if self.config.debugMode:
+            logInfo(f"{len(content)} bytes from GET {url}")
+        return bytes(content).decode('utf-8', errors='ignore')
+        # Sadly, the QGIS stuff does not expose the HTTP status code,
+        # nor can I set a custom timeout (the QGIS configured timeout
+        # applies, which is typically far to high for our use case).
+        # Moreover: how can I make it handle HTTP redirects?
 
 
     def parseLocation(self, j, sref=None):

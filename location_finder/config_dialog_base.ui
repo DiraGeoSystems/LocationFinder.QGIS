@@ -137,6 +137,23 @@
        </property>
       </widget>
      </item>
+     <item row="6" column="0">
+      <widget class="QLabel" name="labelUseRequests">
+       <property name="text">
+        <string>Use Requests</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QCheckBox" name="checkBoxUseRequests">
+       <property name="toolTip">
+        <string>handles HTTP redirection but is unaware of proxy settings</string>
+       </property>
+       <property name="text">
+        <string>use the &quot;requests&quot; library for network access</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>

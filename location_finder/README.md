@@ -44,6 +44,10 @@ at <https://github.com/dirageosystems/LocationFinder.QGIS>
 
 ## Changelog
 
+**next** use `QgsNetworkAccessManager` (applies proxy
+settings) by default, with a config option to use the popular
+`requests` module (follows HTTP redirects) instead
+
 **0.1.1** config dialog, various small improvements, remove
 experimental flag
 

@@ -10,6 +10,7 @@ class Config:
     - limit (int): value for limit parameter (optional)
     - autoQuery (bool): lookup while typing query (off: only on Enter)
     - debugMode (bool): be more verbose on the QGIS protocol
+    - useRequests (bool): use "requests" library instead of QGIS networking
     """
 
 
@@ -21,10 +22,11 @@ class Config:
         self.limit = -1
         self.autoQuery = False
         self.debugMode = False
+        self.useRequests = False
 
 
     def __repr__(self):
-        return f"Config url={self.url}, autoQuery={self.autoQuery}, debugMode={self.debugMode}"
+        return f"Config url={self.url}, autoQuery={self.autoQuery}, debugMode={self.debugMode}, useRequests={self.useRequests}"
 
 
     def load(self):
@@ -35,6 +37,7 @@ class Config:
         self.limit = getInt(settings, "locationfinder/limit") or -1
         self.autoQuery = getFlag(settings, "locationfinder/autoQuery")
         self.debugMode = getFlag(settings, "locationfinder/debugMode")
+        self.useRequests = getFlag(settings, "locationfinder/useRequests")
 
 
     def save(self):
@@ -45,6 +48,7 @@ class Config:
         settings.setValue("locationfinder/limit", self.limit)
         settings.setValue("locationfinder/autoQuery", self.autoQuery)
         settings.setValue("locationfinder/debugMode", self.debugMode)
+        settings.setValue("locationfinder/useRequests", self.useRequests)
 
 
 def getFlag(settings: QSettings, key: str):
