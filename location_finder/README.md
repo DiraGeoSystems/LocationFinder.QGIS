@@ -12,7 +12,7 @@ search for place names and zoom or pan the map accordingly.
 This plugin is meant for organizations that use LocationFinder
 for geocoding based on their own location data, such as address
 points and/or arbitrary points of interests. For more information,
-please see <https://dirageosystems.ch/lf.en.html>
+please see <https://dirageosystems.ch/#locationfinder>
 
 If you are looking for geocoding against global address data,
 try another plugin that uses data from OpenStreetMap or Google
@@ -22,10 +22,18 @@ or other sources with global coverage, search "geocoding" on
 ## Usage
 
 Install and activate the plugin, then open the dock widget
-(click the “LocationFinder” button). In the dock widget's
-*Service* field, enter your LocationFinder's base URL,
-then hit Enter to test the connection and to remember
-this base URL in your QGIS profile.
+(click the “LocationFinder” button). Click the “Config” button
+to open the configuration dialog. As “Service URL” enter the
+LocationFinder's base URL, something like `http://host:port/finder`
+(before version 2) or `http://host:port/api/v1` (since version 2).
+Click “OK” to close the dialog and remember this base URL in your
+QGIS profile. (The service may also use https and there may be
+a path component before the trailing /finder or /api/v1.)
+
+The dock widget's *Service* field shows again the base URL.
+The field is read-only, but if you hit Enter while in the
+field, information about the LocationFinder service will be
+retrieved and shown in the dock widget (connection test).
 
 If the connection to the LocationFinder service is working,
 type queries in the *Lookup* field. Results are reported
@@ -44,7 +52,9 @@ at <https://github.com/dirageosystems/LocationFinder.QGIS>
 
 ## Changelog
 
-**next** use `QgsNetworkAccessManager` (applies proxy
+**next** allow the new LocationFinder 2.x URLs (ending in
+*/api/v1/foo* instead of */Finder/Foo*, but the latter is
+still supported) • use `QgsNetworkAccessManager` (applies proxy
 settings) by default, with a config option to use the popular
 `requests` module (follows HTTP redirects) instead
 
