@@ -52,7 +52,8 @@ at <https://github.com/dirageosystems/LocationFinder.QGIS>
 
 ## Changelog
 
-**next** allow the new LocationFinder 2.x URLs (ending in
+**next** show marker on map for (first few) result locations
+• allow the new LocationFinder 2.x URLs (ending in
 */api/v1/foo* instead of */Finder/Foo*, but the latter is
 still supported) • use `QgsNetworkAccessManager` (applies proxy
 settings) by default, with a config option to use the popular

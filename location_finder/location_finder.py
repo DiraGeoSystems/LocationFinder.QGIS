@@ -18,14 +18,14 @@
 """
 
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QDateTime, QTimer, QUrl
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtGui import QIcon, QColor
 from qgis.PyQt.QtWidgets import QAction, QLabel, QFrame
 from qgis.PyQt.QtNetwork import QNetworkRequest
 from qgis.core import Qgis, QgsMessageLog, QgsSettings, QgsProject
 from qgis.core import QgsPointXY, QgsRectangle
 from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from qgis.core import QgsBlockingNetworkRequest
-from qgis.gui import QgisInterface, QgsMapCanvas
+from qgis.gui import QgisInterface, QgsMapCanvas, QgsVertexMarker
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -57,6 +57,7 @@ class LocationFinderPlugin:
         instance, which allows manipulation of the QGIS application"""
 
         self.iface = iface
+        self.canvas = self.iface.mapCanvas()
         self.plugin_dir = os.path.dirname(__file__)
 
         # initialize locale
@@ -75,6 +76,7 @@ class LocationFinderPlugin:
         self.dockwidget = None
         self.configdialog = None
         self.action = None
+        self.markers = None
 
         self.config = Config()
         self.config.load()
@@ -132,10 +134,11 @@ class LocationFinderPlugin:
 
 
     def unload(self):
-        """Removes the plugin menu item and icon from QGIS GUI."""
+        """Cleanup when plugin is unloaded: remove menu items and icons"""
         if self.config.debugMode:
             logInfo("** unload LocationFinder")
         self.config.save()
+        self.dropMarkers()
         self.iface.removePluginMenu(self.tr(u"&LocationFinder"), self.action)
         self.iface.removeToolBarIcon(self.action)
 
@@ -179,7 +182,9 @@ class LocationFinderPlugin:
 
 
     def onClosePlugin(self):
-        """Cleanup necessary items here when plugin dockwidget is closed"""
+        """Cleanup when the plugin's dockwidget is closed"""
+        self.clearResults()
+        self.dropMarkers()
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
         # remove this statement if dockwidget is to remain for reuse
         # if plugin is reopened; commented since it causes QGIS to
@@ -339,8 +344,8 @@ class LocationFinderPlugin:
 
 
     def showFinderError(self, msg):
+        self.clearResults()
         grid = self.dockwidget.gridLayoutResults
-        clear_layout(grid)
         label = QLabel()
         label.setText(f"<b>Error</b> from LocationFinder:<br>{msg}")
         label.setWordWrap(True)
@@ -351,6 +356,7 @@ class LocationFinderPlugin:
     def clearResults(self):
         grid = self.dockwidget.gridLayoutResults
         clear_layout(grid)
+        self.hideMarkers()
 
 
     def showVersionResults(self, j):
@@ -405,6 +411,7 @@ class LocationFinderPlugin:
         self.clearResults()
         grid = self.dockwidget.gridLayoutResults
         locations = self.parseLookupResults(j)
+        labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         for i, loc in enumerate(locations):
             label = QLabel()
             text = f'<b>{loc.name}</b><br>{loc.type}<br>'
@@ -412,6 +419,14 @@ class LocationFinderPlugin:
                 text += " <a href='zoom'>zoom</a>"
             if loc.hasExtent or loc.hasCenter:
                 text += " <a href='pan'>pan</a>"
+            if i < len(labels):
+                pt = QgsPointXY(loc.cx, loc.cy)
+                trafo = self.getTrafo(loc.sref)
+                pt = trafo.transform(pt)
+                m = self.getMarker(i, pt)
+                if m is not None:
+                    style = "color:purple;font-weight:bold;font-size:large"
+                    text += f"&emsp;<span style=\"{style}\">{labels[i]}</span>"
             label.setText(text)
             label.setWordWrap(True)
             #label.linkHovered.connect(lambda x: QgsMessageLog.logMessage("hovered"))
@@ -482,6 +497,51 @@ class LocationFinderPlugin:
         self.scheduleTime = None
         self.timer.stop()
         self.doLookupRequest()
+
+
+    #--- markers ------------------------------------------------
+
+
+    def getMarker(self, i, map_pt):
+        """get the i_th location marker positioned at map_pt (map coordinates) or None if no such marker"""
+        if not self.markers: # None or empty list
+            labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            self.markers = [self.createMarker(labels[i]) for i in range(len(labels))]
+            for m in self.markers:
+                m.hide()
+                self.canvas.scene().addItem(m)
+        if 0 <= i and i < len(self.markers):
+            m = self.markers[i]
+            m.setCenter(map_pt)
+            m.show()
+            return m
+        return None
+
+
+    def hideMarkers(self):
+        """hide all markers, but leave them attached to the map canvas (can show again)"""
+        if self.markers:
+            for m in self.markers:
+                m.hide()
+
+
+    def dropMarkers(self):
+        """remove all markers from map canvas and from cache (they have to be recreated)"""
+        if self.markers:
+            for m in self.markers:
+                m.hide()
+                self.canvas.scene().removeItem(m)
+        self.markers = None
+
+
+    def createMarker(self, character):
+        # TODO custom map canvas item that shows the given character
+        m = QgsVertexMarker(self.canvas)
+        m.setColor(QColor(200,0,80))
+        m.setIconSize(12)
+        m.setPenWidth(3)
+        m.setIconType(QgsVertexMarker.ICON_X)
+        return m
 
 
 #=== utils ======================================================
