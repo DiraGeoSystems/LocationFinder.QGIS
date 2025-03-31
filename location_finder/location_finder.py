@@ -34,6 +34,7 @@ from .location_finder_dockwidget import LocationFinderDockWidget
 from .config_dialog import ConfigDialog
 from .location import Location
 from .config import Config
+from .location_marker_item import LocationMarkerItem
 
 import os.path
 import requests
@@ -76,7 +77,7 @@ class LocationFinderPlugin:
         self.dockwidget = None
         self.configdialog = None
         self.action = None
-        self.markers = None
+        self.markers = {}
 
         self.config = Config()
         self.config.load()
@@ -423,10 +424,9 @@ class LocationFinderPlugin:
                 pt = QgsPointXY(loc.cx, loc.cy)
                 trafo = self.getTrafo(loc.sref)
                 pt = trafo.transform(pt)
-                m = self.getMarker(i, pt)
-                if m is not None:
-                    style = "color:purple;font-weight:bold;font-size:large"
-                    text += f"&emsp;<span style=\"{style}\">{labels[i]}</span>"
+                self.addMarker(labels[i], pt)
+                style = "color:#C80050;font-weight:bold;font-size:large"
+                text += f" - <span style=\"{style}\">{labels[i]}</span>"
             label.setText(text)
             label.setWordWrap(True)
             #label.linkHovered.connect(lambda x: QgsMessageLog.logMessage("hovered"))
@@ -502,45 +502,39 @@ class LocationFinderPlugin:
     #--- markers ------------------------------------------------
 
 
-    def getMarker(self, i, map_pt):
-        """get the i_th location marker positioned at map_pt (map coordinates) or None if no such marker"""
-        if not self.markers: # None or empty list
-            labels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            self.markers = [self.createMarker(labels[i]) for i in range(len(labels))]
-            for m in self.markers:
-                m.hide()
-                self.canvas.scene().addItem(m)
-        if 0 <= i and i < len(self.markers):
-            m = self.markers[i]
-            m.setCenter(map_pt)
-            m.show()
-            return m
-        return None
+    def addMarker(self, char, map_pt):
+        m = self.markers.get(char)
+        if m is None:
+            m = self.createMarker(char)
+            self.markers[char] = m  # cache
+        #m.setCenter(map_pt)
+        m.setPosition(map_pt)
+        m.show()
+        self.canvas.scene().addItem(m)
+        return m
 
 
     def hideMarkers(self):
-        """hide all markers, but leave them attached to the map canvas (can show again)"""
-        if self.markers:
-            for m in self.markers:
-                m.hide()
+        """remove all markers, but keep the object (can add/show again)"""
+        for m in self.markers.values():
+            m.hide()
+            self.canvas.scene().removeItem(m)
 
 
     def dropMarkers(self):
-        """remove all markers from map canvas and from cache (they have to be recreated)"""
-        if self.markers:
-            for m in self.markers:
-                m.hide()
-                self.canvas.scene().removeItem(m)
-        self.markers = None
+        """remove and forget all location markers (they have to be recreated)"""
+        self.hideMarkers()
+        self.markers.clear()
 
 
     def createMarker(self, character):
-        # TODO custom map canvas item that shows the given character
-        m = QgsVertexMarker(self.canvas)
-        m.setColor(QColor(200,0,80))
-        m.setIconSize(12)
-        m.setPenWidth(3)
-        m.setIconType(QgsVertexMarker.ICON_X)
+        #m = QgsVertexMarker(self.canvas)
+        #m.setColor(QColor(200,0,80))
+        #m.setIconSize(12)
+        #m.setPenWidth(3)
+        #m.setIconType(QgsVertexMarker.ICON_X)
+        m = LocationMarkerItem(self.canvas)
+        m.setChar(character)
         return m
 
 
