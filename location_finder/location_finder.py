@@ -25,7 +25,7 @@ from qgis.core import Qgis, QgsMessageLog, QgsProject
 from qgis.core import QgsPointXY, QgsRectangle
 from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from qgis.core import QgsBlockingNetworkRequest
-from qgis.gui import QgisInterface, QgsMapCanvas, QgsVertexMarker
+from qgis.gui import QgisInterface, QgsMapCanvas, QgsMapToolEmitPoint, QgsVertexMarker
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -129,6 +129,18 @@ class LocationFinderPlugin:
         self.iface.addToolBarIcon(self.openAction)
         self.iface.addPluginToMenu(self.tr(u'&LocationFinder'), self.openAction)
 
+        self.reverseTool = QgsMapToolEmitPoint(self.canvas)
+        self.reverseTool.canvasClicked.connect(self.reverseClicked)
+        self.reverseTool.setToolName("Reverse Geocode")
+        reverseAction = QAction(icon, self.tr(u'Reverse Geocode'), parent)
+        reverseAction.triggered.connect(self.reverse)
+        reverseAction.setEnabled(True)
+        reverseAction.setObjectName("reverseGeocodeAction")
+        reverseAction.setStatusTip("Click on map to reverse geocode location")  # shows on status bar
+        reverseAction.setWhatsThis("Click on map to reverse geocode location")  # TODO shown where/when?
+        self.reverseAction = reverseAction
+        self.iface.addToolBarIcon(self.reverseAction)
+        self.iface.addPluginToMenu(self.tr(u'&LocationFinder'), self.reverseAction)
 
 
     def unload(self):
@@ -139,6 +151,8 @@ class LocationFinderPlugin:
         self.dropMarkers()
         self.iface.removePluginMenu(self.tr(u"&LocationFinder"), self.openAction)
         self.iface.removeToolBarIcon(self.openAction)
+        self.iface.removePluginMenu(self.tr(u"&LocationFinder"), self.reverseAction)
+        self.iface.removeToolBarIcon(self.reverseAction)
 
 
     def onConfigClicked(self):
@@ -185,9 +199,8 @@ class LocationFinderPlugin:
             logInfo("** onClosePlugin LocationFinder")
         self.clearResults()
         self.dropMarkers()
-        self.dockWidget.closingPlugin.disconnect(self.onClosePlugin)
-        del self.dockWidget  # TODO really required?
-        self.dockWidget = None
+        #self.dockWidget.closingPlugin.disconnect(self.onClosePlugin)
+        #self.dockWidget = None
         self.pluginIsActive = False
 
 
@@ -222,6 +235,27 @@ class LocationFinderPlugin:
         self.dockWidget.lineEditService.setText(self.config.url)
         self.dockWidget.lineEditQuery.setText("")
         self.dockWidget.checkBoxAuto.setChecked(self.config.autoQuery)
+        self.clearResults()
+
+
+    def reverse(self):
+        """Make reverse geocoding the active map tool"""
+        if self.config.debugMode:
+            logInfo("Making reverse geocoding the active map tool")
+        if not self.pluginIsActive:
+            self.open()
+        self.canvas.setMapTool(self.reverseTool)
+
+
+    def reverseClicked(self, map_pt: QgsPointXY, button: Qt.MouseButton):
+        """Called when the reverse geocode tool clicked on the canvas"""
+        logInfo(f"reverse click: x={map_pt.x()} y={map_pt.y()} btn={button}")
+        if not self.pluginIsActive:
+            self.open()
+        if not self.dockWidget.lineEditService.text().strip():
+            self.reportError("Cannot reverse geocode: no LocationFinder service configured; please do so in the Config dialog")
+            return
+        self.doReverseRequest(map_pt)
 
 
     def now(self):
@@ -283,6 +317,36 @@ class LocationFinderPlugin:
             self.reportError(f"Error doing lookup request: {e}")
             self.dockWidget.plainTextEdit.setPlainText(str(e))
             self.clearResults()
+
+
+    def doReverseRequest(self, map_pt: QgsPointXY, baseUrl=None):
+        # expect map_pt in project's crs
+        # transform to sref in config (if given) or LF's crs (if known) or don't transform (let LF do it)
+        # then build the LF request and self.showReverseResults (à la showLookupResults)
+        try:
+            baseUrl = baseUrl or self.dockWidget.lineEditService.text()
+            url = self.getFinderUrl(baseUrl, "reverse")
+            crs = QgsProject.instance().crs().authid()  # e.g. "EPSG:4326"
+            (name,code) = crs.split(':', 2)
+            assert name == "EPSG", "Project CRS authority is not EPSG"
+            pt = map_pt # TODO transform to LF's crs (if known)
+            # location: {"x":X, "y":Y, "spatialReference":{"wkid":9999}}  (Esri style)
+            params = {"location": f'{{"x":{pt.x()},"y":{pt.y()},"spatialReference":{{"wkid":{int(code)}}}}}'}
+            logInfo(f"distance={self.config.distance}")
+            if self.config.distance is not None and self.config.distance > 0:
+                params["distance"] = self.config.distance
+            if self.config.filter:
+                params["filter"] = self.config.filter
+            if self.config.limit is not None and self.config.limit > 0:
+                params["limit"] = self.config.limit
+            if self.config.sref is not None:
+                params["sref"] = self.config.sref
+            text = self.doFinderRequest(url, params)
+            self.dockWidget.plainTextEdit.setPlainText(text)
+            self.showLookupResults(json.loads(text)) # TODO consider variant showReverseResults()
+        except Exception as e:
+            self.reportError(f"Error doing reverse request: {e}")
+            self.dockWidget.plainTextEdit.setPlainText(str(e))
             self.clearResults()
 
 

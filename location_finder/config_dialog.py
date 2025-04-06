@@ -20,7 +20,6 @@ from .config import Config
 
 class ConfigDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
-        """Constructor."""
         super(ConfigDialog, self).__init__(parent)
         # Set up the user interface from Designer through FORM_CLASS.
         # After self.setupUi() you can access any designer object by doing
@@ -35,7 +34,8 @@ class ConfigDialog(QtWidgets.QDialog, FORM_CLASS):
         self.lineEditUrl.setText(config.url or "")
         self.lineEditFilter.setText(config.filter or "")
         self.lineEditSref.setText(config.sref or "")
-        self.spinBoxLimit.setValue(-1 if config.limit is None else config.limit)
+        self.spinBoxLimit.setValue(-1 if config.limit is None else int(config.limit))
+        self.spinBoxDistance.setValue(-1 if config.distance is None else int(config.distance))
         self.checkBoxAutoQuery.setChecked(config.autoQuery or False)
         self.checkBoxDebugMode.setChecked(config.debugMode or False)
         self.checkBoxUseRequests.setChecked(config.useRequests or False)
@@ -47,6 +47,7 @@ class ConfigDialog(QtWidgets.QDialog, FORM_CLASS):
         config.filter = canonical(self.lineEditFilter.text())
         config.sref = canonical(self.lineEditSref.text())
         config.limit = self.spinBoxLimit.value()
+        config.distance = self.spinBoxDistance.value()
         config.autoQuery = self.checkBoxAutoQuery.isChecked()
         config.debugMode = self.checkBoxDebugMode.isChecked()
         config.useRequests = self.checkBoxUseRequests.isChecked()

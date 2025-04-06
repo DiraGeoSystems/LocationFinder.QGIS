@@ -8,6 +8,7 @@ class Config:
     - filter (str): value for filter parameter (optional)
     - sref (int|str): response spatial reference (optional)
     - limit (int): value for limit parameter (optional)
+    - distance (int): value for distance parameter (optional, in meters)
     - autoQuery (bool): lookup while typing query (off: only on Enter)
     - debugMode (bool): be more verbose on the QGIS protocol
     - useRequests (bool): use "requests" library instead of QGIS networking
@@ -20,6 +21,7 @@ class Config:
         self.filter = None
         self.sref = None
         self.limit = -1
+        self.distance = -1
         self.autoQuery = False
         self.debugMode = False
         self.useRequests = False
@@ -35,6 +37,7 @@ class Config:
         self.filter = getStr(settings, "locationfinder/filter")
         self.sref = getStr(settings, "locationfinder/sref")
         self.limit = getInt(settings, "locationfinder/limit") or -1
+        self.distance = getInt(settings, "locationfinder/distance") or -1
         self.autoQuery = getFlag(settings, "locationfinder/autoQuery")
         self.debugMode = getFlag(settings, "locationfinder/debugMode")
         self.useRequests = getFlag(settings, "locationfinder/useRequests")
@@ -46,6 +49,7 @@ class Config:
         settings.setValue("locationfinder/filter", self.filter)
         settings.setValue("locationfinder/sref", self.sref)
         settings.setValue("locationfinder/limit", self.limit)
+        settings.setValue("locationfinder/distance", self.distance)
         settings.setValue("locationfinder/autoQuery", self.autoQuery)
         settings.setValue("locationfinder/debugMode", self.debugMode)
         settings.setValue("locationfinder/useRequests", self.useRequests)

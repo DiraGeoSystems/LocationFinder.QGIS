@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>400</width>
-    <height>224</height>
+    <height>289</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -41,7 +41,7 @@
         <string>LocationFinder service base URL (required)</string>
        </property>
        <property name="placeholderText">
-        <string>https://example.com/finder</string>
+        <string>https://example.com/finder/api/v1</string>
        </property>
       </widget>
      </item>
@@ -85,7 +85,7 @@
      <item row="3" column="0">
       <widget class="QLabel" name="labelLimit">
        <property name="text">
-        <string>limit</string>
+        <string>max results</string>
        </property>
       </widget>
      </item>
@@ -94,6 +94,9 @@
        <property name="toolTip">
         <string>The &lt;b&gt;limit&lt;/b&gt; parameter (how many locations to return at most;
 &lt;b&gt;-1&lt;/b&gt; to not limit; the service has its own limit that may be lower)</string>
+       </property>
+       <property name="buttonSymbols">
+        <enum>QAbstractSpinBox::UpDownArrows</enum>
        </property>
        <property name="suffix">
         <string/>
@@ -109,28 +112,43 @@
        </property>
       </widget>
      </item>
+     <item row="4" column="1">
+      <widget class="QSpinBox" name="spinBoxDistance">
+       <property name="toolTip">
+        <string>The &lt;b&gt;distance&lt;/b&gt; parameter (max reverse search distance in meters;
+&lt;b&gt;-1&lt;/b&gt; for server default; the server has its own distance that may be lower)</string>
+       </property>
+       <property name="frame">
+        <bool>true</bool>
+       </property>
+       <property name="correctionMode">
+        <enum>QAbstractSpinBox::CorrectToNearestValue</enum>
+       </property>
+       <property name="suffix">
+        <string> meters</string>
+       </property>
+       <property name="minimum">
+        <number>0</number>
+       </property>
+       <property name="maximum">
+        <number>999999</number>
+       </property>
+       <property name="singleStep">
+        <number>100</number>
+       </property>
+       <property name="value">
+        <number>100</number>
+       </property>
+      </widget>
+     </item>
      <item row="5" column="0">
-      <widget class="QLabel" name="labelDebugMode">
-       <property name="text">
-        <string>Debug Mode</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="1">
-      <widget class="QCheckBox" name="checkBoxDebugMode">
-       <property name="text">
-        <string>be more verbose in the QGIS protocol</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="0">
       <widget class="QLabel" name="labelAutoQuery">
        <property name="text">
         <string>Auto Query</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="5" column="1">
       <widget class="QCheckBox" name="checkBoxAutoQuery">
        <property name="text">
         <string>emit query while typing (off: only on enter)</string>
@@ -138,19 +156,40 @@
       </widget>
      </item>
      <item row="6" column="0">
+      <widget class="QLabel" name="labelDebugMode">
+       <property name="text">
+        <string>Debug Mode</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="1">
+      <widget class="QCheckBox" name="checkBoxDebugMode">
+       <property name="text">
+        <string>be more verbose in the QGIS protocol</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="0">
       <widget class="QLabel" name="labelUseRequests">
        <property name="text">
         <string>Use Requests</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
+     <item row="7" column="1">
       <widget class="QCheckBox" name="checkBoxUseRequests">
        <property name="toolTip">
         <string>handles HTTP redirection but is unaware of proxy settings</string>
        </property>
        <property name="text">
         <string>use the &quot;requests&quot; library for network access</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>max distance</string>
        </property>
       </widget>
      </item>
