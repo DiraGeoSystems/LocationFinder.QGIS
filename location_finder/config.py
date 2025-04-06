@@ -1,4 +1,4 @@
-from qgis.PyQt.QtCore import QSettings
+from qgis.core import QgsSettings
 
 
 class Config:
@@ -30,7 +30,7 @@ class Config:
 
 
     def load(self):
-        settings = QSettings()
+        settings = QgsSettings()
         self.url = getStr(settings, "locationfinder/serviceUrl")
         self.filter = getStr(settings, "locationfinder/filter")
         self.sref = getStr(settings, "locationfinder/sref")
@@ -41,7 +41,7 @@ class Config:
 
 
     def save(self):
-        settings = QSettings()
+        settings = QgsSettings()
         settings.setValue("locationfinder/serviceUrl", self.url)
         settings.setValue("locationfinder/filter", self.filter)
         settings.setValue("locationfinder/sref", self.sref)
@@ -51,7 +51,7 @@ class Config:
         settings.setValue("locationfinder/useRequests", self.useRequests)
 
 
-def getFlag(settings: QSettings, key: str):
+def getFlag(settings: QgsSettings, key: str):
     value = settings.value(key, False)
     if value is None: return None
     if type(value) is bool: return value
@@ -59,14 +59,14 @@ def getFlag(settings: QSettings, key: str):
     return value in ["true", "on", "1", "enable", "enabled"]
 
 
-def getInt(settings: QSettings, key: str):
+def getInt(settings: QgsSettings, key: str):
     value = settings.value(key)
     if value is None: return None
     if type(value) is int: return value
     return int(value)
 
 
-def getStr(settings: QSettings, key: str):
+def getStr(settings: QgsSettings, key: str):
     value = settings.value(key)
     if value is None: return None
     text = value if type(value) else str(value)
