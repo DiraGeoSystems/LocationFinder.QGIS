@@ -18,6 +18,7 @@ tracker=https://github.com/dirageosystems/LocationFinder.QGIS/issues
 
 about=This QGIS Plugin allows interactive geocoding against a LocationFinder instance.
     The user interface consists of a dockable window where you can type location names and see geocoded results.
+    It also includes a map tool for reverse geocoding: click map to find nearest location(s).
     About LocationFinder, please see https://dirageosystems.ch
 
 # Tags are comma separated with spaces allowed
