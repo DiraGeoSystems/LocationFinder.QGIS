@@ -249,7 +249,7 @@ class LocationFinderPlugin:
 
     def reverseClicked(self, map_pt: QgsPointXY, button: Qt.MouseButton):
         """Called when the reverse geocode tool clicked on the canvas"""
-        logInfo(f"reverse click: x={map_pt.x()} y={map_pt.y()} btn={button}")
+        logInfo(f"reverse click: x={map_pt.x()} y={map_pt.y()} distance={self.config.distance} limit={self.config.limit}")
         if not self.pluginIsActive:
             self.open()
         if not self.dockWidget.lineEditService.text().strip():
@@ -320,9 +320,6 @@ class LocationFinderPlugin:
 
 
     def doReverseRequest(self, map_pt: QgsPointXY, baseUrl=None):
-        # expect map_pt in project's crs
-        # transform to sref in config (if given) or LF's crs (if known) or don't transform (let LF do it)
-        # then build the LF request and self.showReverseResults (à la showLookupResults)
         try:
             baseUrl = baseUrl or self.dockWidget.lineEditService.text()
             url = self.getFinderUrl(baseUrl, "reverse")
@@ -332,7 +329,6 @@ class LocationFinderPlugin:
             pt = map_pt # TODO transform to LF's crs (if known)
             # location: {"x":X, "y":Y, "spatialReference":{"wkid":9999}}  (Esri style)
             params = {"location": f'{{"x":{pt.x()},"y":{pt.y()},"spatialReference":{{"wkid":{int(code)}}}}}'}
-            logInfo(f"distance={self.config.distance}")
             if self.config.distance is not None and self.config.distance > 0:
                 params["distance"] = self.config.distance
             if self.config.filter:
@@ -343,7 +339,7 @@ class LocationFinderPlugin:
                 params["sref"] = self.config.sref
             text = self.doFinderRequest(url, params)
             self.dockWidget.plainTextEdit.setPlainText(text)
-            self.showLookupResults(json.loads(text)) # TODO consider variant showReverseResults()
+            self.showReverseResults(json.loads(text))
         except Exception as e:
             self.reportError(f"Error doing reverse request: {e}")
             self.dockWidget.plainTextEdit.setPlainText(str(e))
@@ -503,6 +499,13 @@ class LocationFinderPlugin:
         self.dockWidget.scrollArea.ensureVisible(0,0)
 
 
+    def showReverseResults(self, j):
+        # For now just delegate to showLookupResults: the JSON
+        # response structure is of lookup and reverse results
+        # is identical; later we may want to show distance
+        self.showLookupResults(j)
+
+
     def getClickClosure(self, loc):
         def panToLocation():
             mapCanvas:QgsMapCanvas = self.iface.mapCanvas()
@@ -573,7 +576,8 @@ class LocationFinderPlugin:
         #m.setCenter(map_pt)
         m.setPosition(map_pt)
         m.show()
-        self.canvas.scene().addItem(m)
+        if m.scene() != self.canvas.scene():
+            self.canvas.scene().addItem(m)
         return m
 
 
@@ -581,7 +585,8 @@ class LocationFinderPlugin:
         """remove all markers, but keep the object (can add/show again)"""
         for m in self.markers.values():
             m.hide()
-            self.canvas.scene().removeItem(m)
+            if m.scene() == self.canvas.scene():
+                self.canvas.scene().removeItem(m)
 
 
     def dropMarkers(self):
