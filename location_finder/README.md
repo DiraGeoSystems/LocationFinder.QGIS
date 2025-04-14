@@ -61,7 +61,7 @@ at <https://github.com/dirageosystems/LocationFinder.QGIS>
 
 ## Changelog
 
-**next** show marker on map for (first few) result locations
+**0.2.0** show marker on map for (first few) result locations
 • new tool for reverse geocoding (click on map to see nearest
 locations, if supported by the configured service) • allow the
 new LocationFinder 2.x URLs (ending in */api/v1/foo* instead
@@ -74,3 +74,7 @@ with a config option to use the popular `requests` module
 experimental flag
 
 **0.1.0** first public release, marked experimental
+
+A shortened copy of this change log is also maintained in
+the [metadata.txt](./metadata.txt) file, as the latter is
+shown on the QGIS plugin manager window.

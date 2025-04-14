@@ -6,7 +6,7 @@
 name=LocationFinder
 description=Allow QGIS to use LocationFinder (interactive geocoding)
 
-version=0.1.1
+version=0.2.0
 qgisMinimumVersion=3.0
 
 author=ujr for Dira GeoSystems
@@ -42,4 +42,19 @@ Category of the plugin: Raster, Vector, Database or Web
 server=False
 hasProcessingProvider=no
 
-changelog=See README.md file included in the plugin
+changelog=
+  0.2.0
+  - show marker on map for (first few) result locations
+  - new map tool for reverse geocoding (click on map to see nearest
+    locations, if supported by the configured service)
+  - allow the new LocationFinder 2.x URLs (ending in /api/v1/foo
+    instead of /Finder/Foo, but the latter is still supported)
+  - use QgsNetworkAccessManager (applies proxy settings) by default,
+    with a config option to use the popular requests module (follows
+    HTTP redirects) instead
+  0.1.1
+  - config dialog, various small improvements
+  - remove experimental flag
+  0.1.0
+  - first public release (experimental)
+  Also see README.md file included in the plugin
