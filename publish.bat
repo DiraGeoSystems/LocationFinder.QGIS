@@ -4,6 +4,9 @@
 
 @set ARCHIVE=location_finder.zip
 
+@rem QGIS needs a LICENSE file in the plugin zip:
+copy LICENSE .\location_finder
+
 if exist "%ARCHIVE%" del "%ARCHIVE%"
 zip -r "%ARCHIVE%" .\location_finder
 if errorlevel 1 goto oops
@@ -18,3 +21,5 @@ goto done
 echo "Publication failed (see messages above)"
 
 :done
+@rem Cleanup: delete the copied file:
+@del /f /q .\location_finder\LICENSE
